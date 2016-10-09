@@ -87,3 +87,11 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# java gradle
+*.pem
+./java/APISign/build
+./java/APISign/out
+./java/APISign/.idea
+.DS_Store
+.idea/
