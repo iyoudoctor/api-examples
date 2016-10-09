@@ -93,5 +93,6 @@ ENV/
 ./java/APISign/build
 ./java/APISign/out
 ./java/APISign/.idea
+./java/APISign/.gradle
 .DS_Store
 .idea/
