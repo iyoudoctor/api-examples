@@ -91,7 +91,7 @@ if __name__ == "__main__":
             with open(args.key, "rb") as fd:
                 key = fd.read()
             if args.time:
-                time = datetime.fromtimestamp(float(args.time))
+                time = datetime.utcfromtimestamp(float(args.time))
             else:
                 time = getNowSignTime()
                 print "Time:", time.strftime("%s")
