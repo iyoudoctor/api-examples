@@ -1,6 +1,12 @@
-# api-examples
+# API样例
 
-API调用示范样例，已经支持的语言：
+支持的样例：
+
+* API签名算法（HS256 + RS256）
+
+支持的语言：
 
 * python
-* go
+* java
+* php
+* c#

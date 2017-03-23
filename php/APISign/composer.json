@@ -1,0 +1,6 @@
+{
+  "require":{
+    "firebase/php-jwt": "^4.0",
+    "symfony/console": "^3.2"
+  }
+}
