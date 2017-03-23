@@ -37,6 +37,18 @@ public class Sign {
             System.out.print("Please input action type(sign/verify):");
             action = input.next();
         }
+        System.out.print("Please input algorithm type(RS256/HS256):");
+        String algorithm = input.next();
+        while(!algorithm.trim().equals("RS256") && !algorithm.trim().equals("HS256")){
+            System.out.print("Please input algorithm type(RS256/HS256):");
+            algorithm = input.next();
+        }
+        String secret="";
+        if(algorithm.trim().equals("HS256")){
+            System.out.print("Please input secret:");
+            secret = input.next();
+        }
+
         System.out.print("Please input appId:");
         String appId = input.next();
         System.out.print("Please input UTC timestamp(input 0 use default current time):");
@@ -47,19 +59,30 @@ public class Sign {
         String keyPath = input.next();
 
 
-        if(action.equals("sign".trim())){
+        if(action.trim().equals("sign")){
             input.close();
             long utcTime=getUTC();
             if(time>0){
                 utcTime = time;
             }
-            signHttp(appId,path,utcTime,generatePrivateKey(keyPath));
-        }else if(action.equals("verify".trim())){
+            if(algorithm.trim().equals("RS256")){
+                signHttp4RS(appId,path,utcTime,generatePrivateKey(keyPath));
+            }else if(algorithm.trim().equals("HS256")){
+                signHttp4HS(appId,path,utcTime,secret);
+            }
+
+        }else if(action.trim().equals("verify")){
             System.out.print("Please input signature:");
             String signature = input.next();
             input.close();
+
             try {
-                verifyHttp(appId,path, time,signature,generatePublicKey(keyPath));
+                if(algorithm.trim().equals("HS256")){
+                    verifyHttp4HS(appId,path, time,signature,secret);
+                }else{
+                    verifyHttp4RS(appId,path, time,signature,generatePublicKey(keyPath));
+                }
+
             } catch (SignatureException e) {
                 e.printStackTrace();
             } catch (NoSuchAlgorithmException e) {
@@ -91,7 +114,7 @@ public class Sign {
      * @param privateKey
      */
 
-    public static void signHttp(String appID,String path,long utcTime,RSAPrivateKey privateKey)  {
+    public static void signHttp4RS(String appID,String path,long utcTime,RSAPrivateKey privateKey)  {
         final JWTSigner signer = new JWTSigner(privateKey);
         final HashMap<String, Object> claims = new HashMap<String, Object>();
         claims.put("appID", appID);
@@ -102,6 +125,19 @@ public class Sign {
         String signature = signer.sign(claims,options);
         System.out.println("signature : "+signature);
     }
+
+    public static void signHttp4HS(String appID,String path,long utcTime,String secret)  {
+        final JWTSigner signer = new JWTSigner(secret);
+        final HashMap<String, Object> claims = new HashMap<String, Object>();
+        claims.put("appID", appID);
+        claims.put("path", path);
+        claims.put("utctime", parseRFC3339Date(utcTime));
+        JWTSigner.Options options = new JWTSigner.Options();
+        options.setAlgorithm(Algorithm.HS256);
+        String signature = signer.sign(claims,options);
+        System.out.println("signature : "+signature);
+    }
+
 
     /**
      * Verify http
@@ -116,8 +152,24 @@ public class Sign {
      *
      * @param publicKey
      */
-    public static boolean verifyHttp(String appID,String path,long utcTime,String signature,RSAPublicKey publicKey) throws SignatureException, NoSuchAlgorithmException, JWTVerifyException, InvalidKeyException, IOException{
+    public static boolean verifyHttp4RS(String appID,String path,long utcTime,String signature,RSAPublicKey publicKey) throws SignatureException, NoSuchAlgorithmException, JWTVerifyException, InvalidKeyException, IOException{
         final JWTVerifier verifier = new JWTVerifier(publicKey);
+        final Map<String, Object> claims = verifier.verify(signature);
+        System.out.println("appID : "+claims.get("appID"));
+        System.out.println("path : "+claims.get("path"));
+        System.out.println("utcTime : "+claims.get("utctime"));
+        if(claims.get("appID").equals(appID) && claims.get("path").equals(path) && claims.get("utctime").equals(parseRFC3339Date(utcTime))){
+            System.out.println("Validation passed!");
+            return true;
+        }else{
+            System.out.println("Validation failed!");
+            return false;
+        }
+
+    }
+
+    public static boolean verifyHttp4HS(String appID,String path,long utcTime,String signature,String secret) throws SignatureException, NoSuchAlgorithmException, JWTVerifyException, InvalidKeyException, IOException{
+        final JWTVerifier verifier = new JWTVerifier(secret);
         final Map<String, Object> claims = verifier.verify(signature);
         System.out.println("appID : "+claims.get("appID"));
         System.out.println("path : "+claims.get("path"));
@@ -192,7 +244,6 @@ public class Sign {
         }
         return null;
     }
-
 
 
     /**
